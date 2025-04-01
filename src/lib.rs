@@ -7,3 +7,5 @@ pub mod models;
 pub mod redis_manager; 
 pub mod monsters;
 pub mod game_loop;
+pub mod stats;
+pub mod combat;

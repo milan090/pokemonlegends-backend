@@ -17,10 +17,14 @@ pub async fn store_session(
     player_id: &str,
     expiry_seconds: u64
 ) -> redis::RedisResult<()> {
+    // Use a much longer expiry time for persistent sessions
+    // This value makes sessions last for approximately 10 years
+    const LONG_TERM_EXPIRY: u64 = 315_360_000; // 60*60*24*365*10 seconds
+    
     redis_conn.set_ex(
         &format!("session:{}", session_token),
         player_id,
-        expiry_seconds,
+        LONG_TERM_EXPIRY,
     ).await
 }
 
@@ -36,12 +40,10 @@ pub async fn store_player_state(
     lobby_id: &str,
     player_id: &str,
     state_json: &str,
-    expiry_seconds: u64
 ) -> redis::RedisResult<()> {
-    redis_conn.set_ex(
+    redis_conn.set(
         &format!("player:{}:{}", lobby_id, player_id),
         state_json,
-        expiry_seconds,
     ).await
 }
 

@@ -8,6 +8,14 @@ pub struct Config {
     pub server: ServerConfig,
     pub game: GameConfig,
     pub performance: PerformanceConfig,
+    pub monsters: MonstersConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MonstersConfig {
+    pub templates_path: String,
+    pub moves_path: String,
+    pub type_chart_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -40,10 +48,15 @@ impl Default for Config {
             game: GameConfig {
                 max_players: 50,
                 update_rate_ms: 100,
-                inactive_timeout_sec: 60,
+                inactive_timeout_sec: 315_360_000, // 10 years (60*60*24*365*10 seconds)
             },
             performance: PerformanceConfig {
                 broadcast_channel_size: 100,
+            },
+            monsters: MonstersConfig {
+                templates_path: "resources/pokemon.json".to_string(),
+                moves_path: "resources/moves.json".to_string(),
+                type_chart_path: "resources/types.json".to_string(),
             },
         }
     }
@@ -97,6 +110,15 @@ impl Config {
             if let Ok(channel_size) = channel_size.parse::<usize>() {
                 config.performance.broadcast_channel_size = channel_size;
             }
+        }
+
+        // Monster config
+        if let Ok(templates_path) = env::var("MONSTER_TEMPLATES_PATH") {
+            config.monsters.templates_path = templates_path;
+        }
+        
+        if let Ok(moves_path) = env::var("MOVES_PATH") {
+            config.monsters.moves_path = moves_path;
         }
 
         info!("Configuration loaded: {:?}", config);

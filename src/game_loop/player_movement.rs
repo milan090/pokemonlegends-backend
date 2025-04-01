@@ -4,11 +4,10 @@ use chrono::Utc;
 use tokio::time;
 use dashmap::{DashMap, DashSet};
 use tracing::{info, warn};
-use serde_json::json;
 
-use crate::models::{Lobby, PlayerState, ServerMessage};
+use crate::models::{PlayerState, ServerMessage};
 use crate::app_state::AppState;
-
+use crate::lobby::Lobby;
 // Constants for player movement
 const MOVEMENT_UPDATE_INTERVAL_MS: u64 = 50; // Send updates every 100ms
 const MAX_PLAYER_SPEED: u32 = 3; // Maximum allowed movement in a single validation step
@@ -34,6 +33,11 @@ impl PlayerMovementManager {
 
     // Validate a player movement request
     pub fn validate_movement(&self, player_id: &str, current_state: &PlayerState, new_x: u32, new_y: u32) -> bool {
+        // If player is in combat, prevent movement
+        if current_state.in_combat {
+            return false;
+        }
+        
         // Get the last validated position and timestamp
         if let Some(entry) = self.last_validated_positions.get(player_id) {
             let (last_state, last_update_time) = entry.value();
