@@ -1,6 +1,7 @@
 use crate::combat::state::{WildBattleState, BattleEvent, BattlePhase, TurnOrder, PlayerAction, WildPokemonAction, BattleEntityRef, StatusCondition, BattlePokemonPublicView, BallType};
 use crate::combat::logic::battle_calculations::calculate_damage;
 use crate::combat::logic::battle_effects::{apply_effect, apply_damage_with_effectiveness};
+use crate::combat::CaptureAttempt;
 use rand::Rng;
 
 /// Processes a single turn of the battle
@@ -561,10 +562,17 @@ fn execute_capture(
         message: format!("{} threw a {} at the wild {}!", player_name, ball_name, wild_pokemon_name) 
     });
     
-    let success = rand::thread_rng().gen_bool(0.1); // Placeholder 10% success
+    // Calculate success chance based on HP percentage
+    let hp_percentage = battle_state.wild_pokemon.current_hp as f64 / battle_state.wild_pokemon.max_hp as f64;
+    let base_chance = 0.3; // 30% base chance
+    let hp_bonus = 0.4 * (1.0 - hp_percentage); // Up to 40% bonus for low HP
+    let success = rand::thread_rng().gen_bool(base_chance + hp_bonus);
+    
     let shakes = if success { 3 } else { rand::thread_rng().gen_range(0..=2) };
     
-    battle_events.push(BattleEvent::CaptureAttempt { ball_type, shake_count: shakes, success });
+    let capture_event = BattleEvent::CaptureAttempt { ball_type: ball_type.clone(), shake_count: shakes, success };
+    battle_events.push(capture_event.clone());
+    battle_state.capture_attempts.push(CaptureAttempt { ball_type: ball_type.clone(), shake_count: shakes, success, turn_number: battle_state.turn_number });
     
     // Add result message
     if success {
@@ -572,7 +580,9 @@ fn execute_capture(
             message: format!("Gotcha! {} was caught!", wild_pokemon_name) 
         });
         battle_state.battle_phase = BattlePhase::Finished;
-        // TODO: Store capture details for BattleEnd message
+       
+        
+        
     } else {
         let shake_message = match shakes {
             0 => format!("The {} broke free immediately!", wild_pokemon_name),

@@ -497,6 +497,15 @@ impl BattleManager {
                         Ok(_) => info!("Saved captured Pokemon {} for player {}", captured_pokemon.id, player_id),
                         Err(e) => error!("Failed to save captured Pokemon: {}", e),
                     }
+                    let active_pokemons = pokemon_collection_manager.get_active_pokemons(&player_id).await.unwrap();
+                    // send to player
+                    let active_pokemons_msg = ServerMessage::ActivePokemons { 
+                        pokemons: active_pokemons.iter().map(|p| pokemon_collection_manager.pokemon_to_display_pokemon(p)).collect()
+                    };
+                    if let Err(e) = lobby.send_to_player(&player_id, &active_pokemons_msg).await {
+                        error!("Failed to send active Pokémon collection to player {}: {}", player_id, e);
+                    }
+
                      // TODO: Create PrivateView from captured_pokemon if needed
                      determined_captured_pokemon_view = None; // Placeholder view
                      // --- End Pokemon Creation ---
